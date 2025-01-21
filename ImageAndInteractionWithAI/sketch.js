@@ -1,4 +1,4 @@
-let frontTexture;
+let frontTexture;　//蓋のテクスチャ
 let backTexture;
 let backlineTexture;
 let frontAlpha = 255; // frontTextureの初期の透明度
