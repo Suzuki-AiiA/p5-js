@@ -95,6 +95,15 @@ function draw() {
     background('skyblue');
   }
 
+  // 振動を適用する（タップ中に常に振動）
+  if (isPressed && !capOpened) {
+    shakeOffsetX = random(-5, 5);
+    shakeOffsetY = random(-5, 5);
+  } else {
+    shakeOffsetX = 0;
+    shakeOffsetY = 0;
+  }
+
   // 揺れを適用する
   let backX = 200 + (isPressed && !capOpened ? shakeOffsetX : 0);
   let backY = 400 + (isPressed && !capOpened ? shakeOffsetY : 0);
