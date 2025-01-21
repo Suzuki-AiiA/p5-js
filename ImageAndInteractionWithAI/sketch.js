@@ -6,7 +6,7 @@ let alphaDecreaseRate = 10; // タップごとに減少する透明度の量
 
 let capOpenSE;
 let capCloseSE;
-let haikei;
+let haikei; //背景用の変数として用意
 let isPressed = false;
 let isTouchDevice = false; // タッチデバイスかどうかを判定する変数
 let startY = 0; // ドラッグ開始位置
