@@ -22,6 +22,23 @@ let customFont; // フォント変数
 let confettiParticles = [];
 let winnerText = ""; // 勝利者テキストを保持する変数
 
+// デバッグモード用の変数
+let debugMode = true; // デバッグモードを有効にする場合はtrue
+let debugPlayerCards = [
+  { suit: "heart", value: "2" },
+  { suit: "spade", value: "2" }
+];
+let debugOpponentCards = [
+  { suit: "club", value: "2" },
+  { suit: "diamond", value: "2" }
+];
+let debugCommunityCards = [
+  { suit: "heart", value: "10" },
+  { suit: "spade", value: "8" },
+  { suit: "club", value: "7" },
+  { suit: "diamond", value: "6" },
+  { suit: "heart", value: "5" }
+];
 
 function preload() {
   // スート画像を読み込む
@@ -42,8 +59,25 @@ function setup() {
       deck.push({ suit, value });
     }
   }
+  
+  initializeDeck();
   shuffleDeck();
+
+  // デバッグモードならカードを設定
+  if (debugMode) setDebugCards();
+
 }
+
+// デッキを初期化する関数
+function initializeDeck() {
+  deck = [];
+  for (let suit of suits) {
+    for (let value of values) {
+      deck.push({ suit, value });
+    }
+  }
+}
+
 
 // パーティクルクラス
 class ConfettiParticle {
@@ -181,7 +215,7 @@ function drawSlidingCards() {
         sliding = false; // スライドを解除
         gameState = 4; // リセット可能な状態に変更
         
-        // コミュニティカードが揃った瞬間に紙吹雪を発生
+        // 紙吹雪を発生
         triggerConfettiWinner(result);
       }
     }
@@ -204,33 +238,31 @@ function drawWinnerText() {
     text(winnerText, x, y);
   }
 }
-// 勝者判定後に勝利者テキストを設定する関数
+// 勝者のテキストを設定する関数
 function setWinnerText(result) {
   if (result === "Player 1 wins!" || result === "Player 2 wins!") {
     winnerText = result;
   } else {
-    winnerText = "Draw!"; // 引き分けの場合はDraw!を格納
+    winnerText = "It's a draw!"; // ドローの場合のテキスト設定
   }
 }
 
 
-// 勝者のカード中央で紙吹雪を発生させる関数
+// 紙吹雪をトリガーする関数
 function triggerConfettiWinner(result) {
   let x, y;
   if (result === "Player 1 wins!" && cardPositions.length >= 2) {
-    // Player 1のカードの中央を計算
     x = (cardPositions[0].x + cardPositions[1].x) / 2;
     y = cardY + 50;
+    spawnConfetti(x, y, 100); // 紙吹雪を生成
   } else if (result === "Player 2 wins!" && opponentCardPositions.length >= 2) {
-    // Player 2のカードの中央を計算
     x = (opponentCardPositions[0].x + opponentCardPositions[1].x) / 2;
     y = opponentCardY + 50;
+    spawnConfetti(x, y, 100); // 紙吹雪を生成
   } else {
-    return; // 配列が空の場合、処理を中断
+    setWinnerText("It's a draw!"); // ドローでもテキストを設定
   }
-
   setWinnerText(result);
-  spawnConfetti(x, y, 100); // 紙吹雪を生成
 }
 
 // ランクを数値化する関数
@@ -250,7 +282,7 @@ function getRank(handName) {
   return rankTable[handName] || 0; // デフォルトは0
 }
 
-// 役の比較関数
+// 役の比較を行う関数
 function compareHands(player1, player2) {
   if (player1.rank > player2.rank) return "Player 1 wins!";
   if (player1.rank < player2.rank) return "Player 2 wins!";
@@ -269,8 +301,9 @@ function compareHands(player1, player2) {
     if (kicker1 < kicker2) return "Player 2 wins!";
   }
 
-  return "It's a tie!"; // 完全に同じ場合
+  return "It's a draw!"; // 完全に同じ場合
 }
+
 
 function drawFinalCards() {
   for (let i = 0; i < finalCards.length; i++) {
@@ -342,29 +375,56 @@ function drawCard(x, y, suit, value) {
 
 
 function mousePressed() {
-  console.log("GameState:", gameState); // デバッグ用
+  console.log("GameState:", gameState); // デバッグ用ログ
 
   if (!sliding) {
     if (gameState === 0 && currentCards.length === 0) {
       // Player1のカードをスライドイン
-      generatePlayerCards();
+      if (debugMode) {
+        currentCards = [...debugPlayerCards];
+        cardPositions = [
+          { x: width / 2 - cardDistance },
+          { x: width / 2 + cardDistance },
+        ];
+      } else {
+        generatePlayerCards();
+      }
       gameState++; // 状態を1に進める
     } else if (gameState === 1 && opponentCards.length === 0) {
       // Player2のカードをスライドイン
-      generateOpponentCards();
+      if (debugMode) {
+        opponentCards = [...debugOpponentCards];
+        opponentCardPositions = [
+          { x: width / 2 - cardDistance },
+          { x: width / 2 + cardDistance },
+        ];
+      } else {
+        generateOpponentCards();
+      }
       gameState++; // 状態を2に進める
-    } else if (gameState === 2 && slideQueue.length === 0 && finalCards.length < 5) {
-      // Community Cardsをスライドイン
-      generateSlidingCards();
-      gameState++; // 状態を3に進める
     } 
-      else if (gameState === 4) {
+      // デバック用に条件を一部緩和。カードが用意されていなくてもこのループに入る。
+      else if (gameState === 2 && finalCards.length < 5) {
+      // Community Cardsをスライドイン
+      if (debugMode) {
+        console.log("Debug Community Cards");
+        slideQueue = [...debugCommunityCards];
+        currentSlidingCard = slideQueue.shift();
+        sliding = true;
+        slideY = -140;
+      } else {
+        generateSlidingCards();
+      }
+      gameState++; // 状態を3に進める
+    } else if (gameState === 4) {
       // ゲームをリセット
       resetGame();
       gameState = 0; // 状態を初期状態に戻す
     }
   }
 }
+
+
 
 
 function generateOpponentCards() {
@@ -388,7 +448,13 @@ function generatePlayerCards() {
 }
 
 function generateSlidingCards() {
-  slideQueue = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+  if (debugMode) {
+    // デバッグモードの場合、事前設定されたカードを使用
+    slideQueue = [...debugCommunityCards];
+  } else {
+    // 本番環境ではデッキからカードを取得
+    slideQueue = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+  }
   currentSlidingCard = slideQueue.shift();
   slideY = -140;
   slideIndex = 0;
@@ -417,6 +483,9 @@ function resetGame() {
     }
   }
   shuffleDeck();
+
+  // デバッグモードならカードを設定
+  if (debugMode) setDebugCards();
 }
 
 function shuffleDeck() {
@@ -475,4 +544,27 @@ function evaluateHand(cards) {
   return { rank: 1, name: "ハイカード", cards: ranks.slice(0, 5) };
 }
 
+
+function setDebugCards() {
+  if (debugMode) {
+    // デバッグ用カードをスライドイン用キューに設定
+    currentCards = [];
+    opponentCards = [];
+    finalCards = [];
+    slideQueue = [...debugCommunityCards];
+    slideIndex = 0;
+    sliding = false;
+
+    // スライドイン座標の初期化
+    cardY = height;
+    opponentCardY = -140;
+
+    // 初期状態でクリック待ち
+    gameState = 0;
+
+    // カードの配置座標をリセット
+    cardPositions = [];
+    opponentCardPositions = [];
+  }
+}
 
