@@ -1,6 +1,7 @@
 let model3D; // 3Dモデルを格納する変数
 let textureImg; // テクスチャ画像を格納する変数
 
+
 function preload() {
   // OBJファイルをロード
   model3D = loadModel('assets/models/Fireman_0122044847_texture.obj', true, 
@@ -13,10 +14,34 @@ function preload() {
     () => console.log("Texture loaded successfully"),
     (err) => console.error("Error loading texture:", err)
   );
+  // 上半球モデルをロード
+  aboveCapsuleModel3D = loadModel('assets/models/sphere/half_hollow_sphere.obj', true, 
+    () => console.log("Half-sphere model loaded successfully"),
+    (err) => console.error("Error loading half-sphere model:", err)
+  );
+
+  // 下半球モデルをロード
+  bottomCapsuleModel3D = loadModel('assets/models/sphere/half_hollow_sphere.obj', true, 
+    () => console.log("Half-sphere model loaded successfully"),
+    (err) => console.error("Error loading half-sphere model:", err)
+  );
+
+  // 半球モデル用のテクスチャ画像をロード
+  textureSphereImg = loadImage('assets/textures/mapping.png', 
+    () => console.log("Half-sphere texture loaded successfully"),
+    (err) => console.error("Error loading half-sphere texture:", err)
+  );
+
+
 }
 
 function setup() {
   createCanvas(400, (400 / 9) * 16, WEBGL);
+  devtexture = loadImage('assets/pokeBall.png', () => {
+    console.log("devtexture loaded successfully");
+  }, (err) => {
+    console.error("Error loading devtexture:", err);
+  });
 }
 
 function draw() {
@@ -29,21 +54,39 @@ function draw() {
   // カメラ操作
   orbitControl();
 
-  // モデルの描画
+  // Firemanモデルの描画
   push();
-  scale(2);
-
-  // モデルを上下反転
-  rotateX(PI); // 上下反転（X軸で180度回転）
-  
-  // 回転アニメーション
-  rotateY(frameCount * 0.01); // Y軸回転
-
-  // テクスチャを適用
+  scale(1.5);
+  translate(0, -5, 0); // Firemanモデルの上に配置
+  rotateX(PI); // モデルを上下反転
+  rotateY(frameCount * -0.001); // 回転アニメーション
   if (textureImg) {
-    texture(textureImg); // 通常のテクスチャ
+    texture(textureImg); // Firemanモデルのテクスチャ適用
   }
-
   model(model3D);
   pop();
+
+  // 上半球モデルの描画
+  push();
+  scale(1.7);
+  translate(0, -50, 0); // Firemanモデルの上に配置
+  if (textureSphereImg) {
+    texture(textureSphereImg); // 半球モデルのテクスチャ適用
+  }
+  model(aboveCapsuleModel3D);
+  pop();
+
+  // 下半球モデルの描画
+  push();
+  scale(1.7);
+  translate(0, 50, 0); // Firemanモデルの上に配置
+  rotateX(PI); // モデルを上下反転
+  if (textureSphereImg) {
+    texture(textureSphereImg); // 半球モデルのテクスチャ適用
+  }
+  model(bottomCapsuleModel3D);
+  pop();
+
+
+
 }
