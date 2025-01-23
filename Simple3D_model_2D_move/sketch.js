@@ -26,6 +26,7 @@ function setup() {
 
 function draw() {
   background(240);
+
   ambientLight(150);
   normalMaterial();
   pointLight(255, 255, 255, 100, 100, 100);
@@ -40,14 +41,16 @@ function draw() {
 
   orbitControl();
 
-  // 揺れの計算（タップしている間だけ）
-  if (mouseIsPressed) {
-    shakeOffsetX = random(-2, 2); // X方向に-2から2のランダムな揺れ
-    shakeOffsetY = random(-2, 2); // Y方向に-2から2のランダムな揺れ
-  } else {
-    shakeOffsetX = 0;
-    shakeOffsetY = 0;
-  }
+// 揺れの計算（タップしている間だけ）
+if (mouseIsPressed) {
+  shakeOffsetX = random(-2, 2); // X方向に-2から2のランダムな揺れ
+  shakeOffsetY = random(-2, 2); // Y方向に-2から2のランダムな揺れ
+  t = 0; // アニメーションを停止
+} else if (isOpening && t < 1) {
+  shakeOffsetX = 0;
+  shakeOffsetY = 0;
+  t += 0.01; // アニメーション速度を調整
+}
 
   // アニメーションが有効な場合に進行
   if (isOpening && t < 1) {
@@ -104,13 +107,12 @@ function draw() {
   pop();
 }
 
-// タップでアニメーションを開始またはリセット
 function mousePressed() {
-  if (!isOpening) {
+  if (!isOpening && t === 0) {
     isOpening = true; // 開くフラグを有効化
-    t = 0; // アニメーション進行度をリセット
   } else if (t >= 1) {
     isOpening = false; // リセット
     t = 0; // アニメーションをリセット
   }
 }
+
