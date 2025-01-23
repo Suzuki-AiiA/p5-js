@@ -1,6 +1,11 @@
 let model3D; // 3Dモデルを格納する変数
 let textureImg; // テクスチャ画像を格納する変数
 
+let radius = 50 / sin(PI / 4); // 円弧の半径 (約70.71)
+let center = { x: 0, y: 0, z: -100 }; // 円弧の中心
+let startAngle = 0; // スタート時の角度 (ラジアン)
+let endAngle = PI / 2; // ゴール時の角度 (ラジアン)
+let t = 0; // アニメーションの進行度 (0から1まで)
 
 function preload() {
   // OBJファイルをロード
@@ -33,8 +38,6 @@ function preload() {
     );
 }
 
-let openAngle = 0; // 上半球の開き具合（角度）
-
 function setup() {
   createCanvas(400, (400 / 9) * 16, WEBGL);
   devtexture = loadImage('assets/pokeBall.png', () => {
@@ -46,13 +49,10 @@ function setup() {
 
 function draw() {
   background(240);
-
   // 照明設定
   ambientLight(150); // 環境光
   pointLight(255, 255, 255, 100, 100, 100); // 照明
-
-  normalMaterial();
-  // 原点を描画
+    // 原点を描画
   push();
   strokeWeight(5);
   stroke(255, 0, 0); // X軸（赤）
@@ -62,50 +62,66 @@ function draw() {
   stroke(0, 0, 255); // Z軸（青）
   line(0, 0, 0, 0, 0, 100);
   pop();
-  
-  // カメラ操作
   orbitControl();
+  
 
-  // Firemanモデルの描画
-  push();
-  scale(1.5);
-  translate(0, -5, 0); // Firemanモデルの上に配置
-  rotateX(PI); // モデルを上下反転
-  rotateY(frameCount * -0.001); // 回転アニメーション
-  if (textureImg) {
-    texture(textureImg); // Firemanモデルのテクスチャ適用
-  }
-  model(model3D);
-  pop();
+
+  // // Firemanモデルの描画
+  // push();
+  // scale(1.5);
+  // translate(0, -5, 0); // Firemanモデルの上に配置
+  // rotateX(PI); // モデルを上下反転
+  // rotateY(frameCount * -0.001); // 回転アニメーション
+  // if (textureImg) {
+  //   texture(textureImg); // Firemanモデルのテクスチャ適用
+  // }
+  // model(model3D);
+  // pop();
 
 // 上半球モデルの描画（特定の点を固定して回転）
-push();
-scale(1.7);
+  // アニメーションの進行
+  if (t < 1) {
+    t += 0.01; // アニメーション速度を調整
+  }
 
-// 1. 回転中心を固定したい点に移動
-translate(0, -50, -50); // 回転中心を球の底部に設定
+  // 現在の角度を線形補間で計算
+  let theta = lerp(startAngle, endAngle, t);
 
-// 2. 回転を適用
-rotateX(openAngle); // X軸で回転
+  // 現在位置を計算 (円弧に沿った位置)
+  let currentX = center.x + radius * cos(theta); // X座標
+  let currentZ = center.z + radius * sin(theta); // Z座標
+  let currentY = -radius * sin(theta); // Y座標（円弧の高さ）
+  console.log(currentX, currentY, currentZ);
 
-// 3. 元の位置に戻す
-translate(0, 50, 50); // 元の位置に戻す
+  push();
+  scale(1.7);
 
-// 回転中心を青丸で表示
-push();
-fill(0, 0, 255);
-noStroke();
-sphere(5); // 青丸
-pop();
+  // 現在位置に移動
+  translate(currentX, currentY, currentZ);
+  // 中心点に青丸を描画
+  push();
+  fill(0, 0, 255);
+  noStroke();
+  sphere(5); // 青丸
+  pop();
 
+  // 回転を適用
+  rotateX(theta); // 回転を角度に応じて適用
 
+  // 現在位置に赤い球体を表示
+  push();
+  fill(255, 0, 0);
+  noStroke();
+  sphere(5); // 赤い球体で現在位置をマーク
+  pop();
 
-// テクスチャとモデルの描画
-if (textureSphereImg) {
-  texture(textureSphereImg); // 半球モデルのテクスチャ適用
-}
-model(aboveCapsuleModel3D);
-pop();
+  // テクスチャを適用してモデルを描画
+  if (textureSphereImg) {
+    texture(textureSphereImg);
+  }
+  model(aboveCapsuleModel3D);
+  pop();
+
 
 
   // 下半球モデルの描画
@@ -118,14 +134,9 @@ pop();
   }
   model(bottomCapsuleModel3D);
   pop();
-
-  // 開き角度の制御
-  if (openAngle < PI / 2) { // 最大で90度まで開く
-    openAngle += 0.01; // 徐々に角度を増やす
-  }
 }
 
 // リセット処理
 function mousePressed() {
-  openAngle = 0; // 上半球の開き具合をリセット
+  t = 0; // アニメーション進行度をリセット
 }
