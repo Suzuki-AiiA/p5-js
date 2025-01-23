@@ -1,5 +1,8 @@
 let model3D; // 3Dモデルを格納する変数
 let textureImg; // テクスチャ画像を格納する変数
+let textureAboveSphereImg; // テクスチャ画像を格納する変数
+let textureBottomSphereImg; // テクスチャ画像を格納する変数
+
 
 let start = { x: 0, y: -50, z: 0 }; // スタート位置
 let goal = { x: 0, y: -100, z: -150 }; // ゴール位置
@@ -15,7 +18,9 @@ function preload() {
   model3D = loadModel('assets/models/Fireman_0122044847_texture.obj', true);
   textureImg = loadImage('assets/textures/Fireman_0122044847_texture.png');
   aboveCapsuleModel3D = loadModel('assets/models/sphere/half_hollow_sphere.obj', true);
-  textureSphereImg = loadImage('assets/textures/mapping.png');
+  textureAboveSphereImg = loadImage('assets/textures/pokeBallAbove.png');
+  textureBottomSphereImg = loadImage('assets/textures/pokeBallBottom.png');
+
   bottomCapsuleModel3D = loadModel('assets/models/sphere/half_hollow_sphere.obj', true);
 }
 
@@ -27,7 +32,7 @@ function setup() {
 function draw() {
   background(240);
 
-  ambientLight(150);
+  ambientLight(300);
   normalMaterial();
   pointLight(255, 255, 255, 100, 100, 100);
 
@@ -75,8 +80,8 @@ if (mouseIsPressed) {
   rotateX(currentRotation);
 
   // テクスチャを適用してモデルを描画
-  if (textureSphereImg) {
-    texture(textureSphereImg);
+  if (textureAboveSphereImg) {
+    texture(textureAboveSphereImg);
   }
   model(aboveCapsuleModel3D);
   pop();
@@ -86,8 +91,8 @@ if (mouseIsPressed) {
   scale(1.7);
   translate(0, 50, 0); // 下半球モデルの位置調整
   rotateX(Math.PI); // 常に上下反転
-  if (textureSphereImg) {
-    texture(textureSphereImg);
+  if (textureBottomSphereImg) {
+    texture(textureBottomSphereImg);
   }
   model(bottomCapsuleModel3D);
   pop();
