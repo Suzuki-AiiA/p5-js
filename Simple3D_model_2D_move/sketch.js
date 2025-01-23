@@ -31,13 +31,13 @@ function draw() {
   normalMaterial();
   pointLight(255, 255, 255, 100, 100, 100);
 
-  // // 原点を描画
-  // push();
-  // strokeWeight(5);
-  // stroke(255, 0, 0); line(0, 0, 0, 100, 0, 0);
-  // stroke(0, 255, 0); line(0, 0, 0, 0, 100, 0);
-  // stroke(0, 0, 255); line(0, 0, 0, 0, 0, 100);
-  // pop();
+  // 原点を描画
+  push();
+  strokeWeight(5);
+  stroke(255, 0, 0); line(0, 0, 0, 100, 0, 0);
+  stroke(0, 255, 0); line(0, 0, 0, 0, 100, 0);
+  stroke(0, 0, 255); line(0, 0, 0, 0, 0, 100);
+  pop();
 
   orbitControl();
 
