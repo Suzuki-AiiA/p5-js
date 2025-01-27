@@ -32,10 +32,9 @@ function preload() {
     );
 }
 
-let radius = 50 / Math.sin(Math.PI / 4); // 円弧の半径
-let center = { x: 0, y: 0, z: -100 }; // 円弧の中心
-let startAngle = -2.034; // スタート時の角度 (ラジアン)
-let endAngle = 2.677; // ゴール時の角度 (ラジアン)
+// let radius = 50 / Math.sin(Math.PI / 4); // 円弧の半径
+// let center = { x: 0, y: -50, z: 0 }; // 円の中心
+// let goal = { x: 0, y: -100, z: -150 }; // 円の終点
 let t = 0; // アニメーションの進行度 (0から1まで)
 
 
@@ -63,57 +62,67 @@ function draw() {
   stroke(0, 0, 255); // Z軸（青）
   line(0, 0, 0, 0, 0, 100);
   pop();
-  orbitControl();
 
+  // カメラ設定
+  orbitControl();
 // 上半球モデルの描画（特定の点を固定して回転）
   // アニメーションの進行
   if (t < 1) {
     t += 0.01; // アニメーション速度を調整
   }
+
+  // 円の中心と半径
+  const center = { x: 0, y: 0, z: -100 };
+  const radius = 50 * Math.sqrt(5); // 円弧の半径
+
+  // スタート地点とゴール地点の角度
+  const startAngle = Math.atan2(-50 - center.y, 0 - center.z); // スタート角度
+  const goalAngle = Math.atan2(-100 - center.y, -150 - center.z); // ゴール角度
+
   // 現在の角度を線形補間で計算
-  let theta = lerp(startAngle, endAngle, t);
+  const currentAngle = lerp(startAngle, goalAngle, t);
 
-  // 現在位置を計算 (円弧に沿った位置)
-  let currentX = center.x;
-  let currentY = center.y + radius * Math.cos(theta);
-  let currentZ = center.z + radius * Math.sin(theta);
-
-
-  push();
-  scale(1.7);
-
-  // 現在位置に移動
-  translate(currentX, currentY, currentZ);
+  // 現在の座標を計算 (yz平面上の円弧の軌跡)
+  const currentX = center.x;
+  const currentY = center.y + radius * Math.sin(currentAngle);
+  const currentZ = center.z + radius * Math.cos(currentAngle);
   
-  // 中心点に青丸を描画
+  // 青丸を描画
   push();
+  translate(currentX, currentY, currentZ);
+  rotateX(currentAngle); // 回転を現在の角度に応じて適用
   fill(0, 0, 255);
   noStroke();
   sphere(5); // 青丸
   pop();
 
-  // 回転を適用
-  rotateX(theta); // 回転を角度に応じて適用
+  console.log(currentX, currentY, currentZ, currentAngle);
 
+  push();
+  // 上半球モデルの描画
+  scale(1.7);
+  translate(currentX, currentY, currentZ);
+  rotateX(currentAngle); // 回転を現在の角度に応じて適用
+  
   // テクスチャを適用してモデルを描画
   if (textureSphereImg) {
     texture(textureSphereImg);
   }
-  // model(aboveCapsuleModel3D);
+  model(aboveCapsuleModel3D);
   pop();
 
 
 
   // 下半球モデルの描画
-  // push();
-  // scale(1.7);
-  // translate(0, 50, 0); // 下半球モデルの位置調整
-  // rotateX(PI); // モデルを上下反転
-  // if (textureSphereImg) {
-  //   texture(textureSphereImg); // 下半球モデルのテクスチャ適用
-  // }
-  // model(bottomCapsuleModel3D);
-  // pop();
+  push();
+  scale(1.7);
+  translate(0, 50, 0); // 下半球モデルの位置調整
+  rotateX(PI); // モデルを上下反転
+  if (textureSphereImg) {
+    texture(textureSphereImg); // 下半球モデルのテクスチャ適用
+  }
+  model(bottomCapsuleModel3D);
+  pop();
 
 
   
