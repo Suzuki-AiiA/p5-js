@@ -25,19 +25,19 @@ let winnerText = ""; // 勝利者テキストを保持する変数
 // デバッグモード用の変数
 let debugMode = true; // デバッグモードを有効にする場合はtrue
 let debugPlayerCards = [
-  { suit: "heart", value: "A" },
-  { suit: "spade", value: "10" }
+  { suit: "heart", value: "2" },
+  { suit: "club", value: "2" }
 ];
 let debugOpponentCards = [
-  { suit: "club", value: "10" },
-  { suit: "diamond", value: "2" }
+  { suit: "diamond", value: "4" },
+  { suit: "heart", value: "4" }
 ];
 let debugCommunityCards = [
   { suit: "heart", value: "10" },
-  { suit: "spade", value: "8" },
-  { suit: "club", value: "7" },
-  { suit: "diamond", value: "6" },
-  { suit: "heart", value: "5" }
+  { suit: "spade", value: "10" },
+  { suit: "heart", value: "J" },
+  { suit: "diamond", value: "J" },
+  { suit: "club", value: "5" }
 ];
 
 function preload() {
@@ -189,7 +189,7 @@ function drawOpponentCards() {
 
 function drawSlidingCards() {
   if (currentSlidingCard) {
-    slideY += 5;
+    slideY += 8;
     let targetX = width / 2 + (slideIndex - 2) * finalCardDistance;
     drawCard(targetX, slideY, currentSlidingCard.suit, currentSlidingCard.value);
 
@@ -203,6 +203,11 @@ function drawSlidingCards() {
         currentSlidingCard = slideQueue.shift();
       } else if (finalCards.length === 5) {
         // 役の判定をここで実行
+
+        // console.log("Player Cards:", currentCards);
+        // console.log("final Cards:", finalCards);
+        // console.log("Opponent Cards:", opponentCards);
+
         const playerHand = evaluateHand([...currentCards, ...finalCards]);
         const opponentHand = evaluateHand([...opponentCards, ...finalCards]);
 
@@ -286,9 +291,19 @@ function getRank(handName) {
 
 
 // 役の比較を行う関数
-function compareHands(player1, player2) {
+function compareHands(player1, player2) { 
+  console.log("Player 1:", player1);
+  console.log("Player 2:", player2);
   if (player1.rank > player2.rank) return "Player 1 wins!";
   if (player1.rank < player2.rank) return "Player 2 wins!";
+
+  if (player1.rank === 5 && player2.rank === 5) {
+    // ハイカード（最大値）で比較
+    const p1Max = Math.max(...player1.cards);
+    const p2Max = Math.max(...player2.cards);
+    if (p1Max > p2Max) return "Player 1 wins!";
+    if (p1Max < p2Max) return "Player 2 wins!";
+  }
 
   // 同じ役の場合、役に使用したカードで比較
   for (let i = 0; i < player1.cards.length; i++) {
@@ -505,8 +520,19 @@ function shuffleDeck() {
   }
 }
 
+/*ChatGPTのコード
 function evaluateHand(cards) {
-  let ranks = cards.map(card => values.indexOf(card.value) + 1).sort((a, b) => b - a);
+  // 修正後のランク変換ロジック
+  let ranks = cards.map(card => {
+    const rawValue = card.value;
+    // Aを14、J/Q/Kを11/12/13、数字はそのまま数値化
+    if (rawValue === "A") return 14;
+    if (rawValue === "J") return 11;
+    if (rawValue === "Q") return 12;
+    if (rawValue === "K") return 13;
+    return parseInt(rawValue); // 2-10は数値に変換
+  }).sort((a, b) => b - a); // 降順でソート
+  console.log("ranks", ranks);
   let suits = cards.map(card => card.suit);
 
   // フラッシュの判定
@@ -583,20 +609,144 @@ function evaluateHand(cards) {
   if (counts[0] === 2) {
     let pairRank = parseInt(Object.keys(rankCounts).find(key => rankCounts[key] === 2));
     usedCards = ranks.filter(rank => rank === pairRank).slice(0, 2);
+    // キッカーを降順でソートしてから選択
+    const kickers = ranks
+      .filter(rank => rank !== pairRank) // ペア以外を抽出
+      .sort((a, b) => b - a) // 降順でソート
+      .slice(0, 3); // 上位3枚を選択
+
     return { 
       rank: 2, 
       name: "ワンペア", 
       cards: usedCards, 
-      kickers: ranks.filter(rank => !usedCards.includes(rank) && ranks.filter(r => r === rank).length === 1).slice(0, 3) 
+      kickers: kickers 
     };
   }
 
   usedCards = ranks.slice(0, 5);
   return { rank: 1, name: "ハイカード", cards: usedCards, kickers: ranks.filter(rank => !usedCards.includes(rank)).slice(0, 5) };
 }
+*/
 
+/*DeepSeekのコード*/
+function evaluateHand(cards) {
+  // カードのランクを数値に変換（A=14, J=11, Q=12, K=13）
+  let ranks = cards.map(card => {
+    const value = card.value;
+    if (value === "A") return 14;
+    if (value === "J") return 11;
+    if (value === "Q") return 12;
+    if (value === "K") return 13;
+    return parseInt(value);
+  }).sort((a, b) => b - a); // 降順ソート
 
+  // スートの種類をカウント（フラッシュ判定用）
+  let suits = cards.map(card => card.suit);
+  let suitCounts = suits.reduce((acc, suit) => {
+    acc[suit] = (acc[suit] || 0) + 1;
+    return acc;
+  }, {});
+  let flushSuit = Object.keys(suitCounts).find(suit => suitCounts[suit] >= 5);
+  let isFlush = !!flushSuit;
 
+  // フラッシュ用ランク（フラッシュスートのカードのみ抽出）
+  let flushRanks = isFlush ? 
+    cards.filter(c => c.suit === flushSuit)
+        .map(c => {
+          const v = c.value;
+          if (v === "A") return 14;
+          if (v === "J") return 11;
+          if (v === "Q") return 12;
+          if (v === "K") return 13;
+          return parseInt(v);
+        }).sort((a, b) => b - a) : [];
+
+  // ストレート判定用（Aを1として追加）
+  let straightRanks = [...new Set(ranks)]; // 重複排除
+  if (straightRanks.includes(14)) {
+    straightRanks.push(1); // A-2-3-4-5用に1を追加
+    straightRanks.sort((a, b) => b - a);
+  }
+
+  // 正確なストレート判定ロジック
+  let straightCards = [];
+  for (let i = 0; i <= straightRanks.length - 5; i++) {
+    if (straightRanks[i] - straightRanks[i + 4] === 4) {
+      straightCards = straightRanks.slice(i, i + 5);
+      break;
+    }
+  }
+  let isStraight = straightCards.length === 5;
+
+  // ストレートフラッシュ判定
+  let isStraightFlush = false;
+  if (isFlush && flushRanks.length >= 5) {
+    let straightFlushRanks = [...new Set(flushRanks)];
+    if (straightFlushRanks.includes(14)) {
+      straightFlushRanks.push(1);
+      straightFlushRanks.sort((a, b) => b - a);
+    }
+    for (let i = 0; i <= straightFlushRanks.length - 5; i++) {
+      if (straightFlushRanks[i] - straightFlushRanks[i + 4] === 4) {
+        isStraightFlush = true;
+        straightCards = straightFlushRanks.slice(i, i + 5);
+        break;
+      }
+    }
+  }
+
+  // ランクの出現回数をカウント
+  let rankCounts = ranks.reduce((acc, rank) => {
+    acc[rank] = (acc[rank] || 0) + 1;
+    return acc;
+  }, {});
+
+  let counts = Object.values(rankCounts).sort((a, b) => b - a);
+
+  // 役の判定（優先順位順）
+  if (isStraightFlush) {
+    console.log("isRoyale", straightCards);
+    if (straightCards[0] === 14 && [13, 12, 11, 10].every(val => straightCards.includes(val))) {
+      console.log("RoyalFlush", straightCards);
+      return { rank: 10, name: "ロイヤルフラッシュ", cards: straightCards, kickers: [] };
+    }
+    return { rank: 9, name: "ストレートフラッシュ", cards: straightCards, kickers: [] };
+  }
+  if (counts[0] === 4) {
+    const fourRank = parseInt(Object.keys(rankCounts).find(k => rankCounts[k] === 4));
+    const kickers = ranks.filter(r => r !== fourRank).sort((a, b) => b - a).slice(0, 1);
+    return { rank: 8, name: "フォーカード", cards: Array(4).fill(fourRank), kickers };
+  }
+  if (counts[0] === 3 && counts[1] === 2) {
+    const threeRank = parseInt(Object.keys(rankCounts).find(k => rankCounts[k] === 3));
+    const pairRank = parseInt(Object.keys(rankCounts).find(k => rankCounts[k] === 2));
+    return { rank: 7, name: "フルハウス", cards: [threeRank, threeRank, threeRank, pairRank, pairRank], kickers: [] };
+  }
+  if (isFlush) {
+    return { rank: 6, name: "フラッシュ", cards: flushRanks.slice(0, 5), kickers: [] };
+  }
+  if (isStraight) {
+    return { rank: 5, name: "ストレート", cards: straightCards, kickers: [] };
+  }
+  if (counts[0] === 3) {
+    const threeRank = parseInt(Object.keys(rankCounts).find(k => rankCounts[k] === 3));
+    const kickers = ranks.filter(r => r !== threeRank).sort((a, b) => b - a).slice(0, 2);
+    return { rank: 4, name: "スリーカード", cards: Array(3).fill(threeRank), kickers };
+  }
+  if (counts[0] === 2 && counts[1] === 2) {
+    const pairs = Object.keys(rankCounts).filter(k => rankCounts[k] === 2).map(Number).sort((a, b) => b - a);
+    const kickers = ranks.filter(r => !pairs.includes(r)).sort((a, b) => b - a).slice(0, 1);
+    return { rank: 3, name: "ツーペア", cards: [...pairs.flatMap(p => [p, p])], kickers };
+  }
+  if (counts[0] === 2) {
+    const pairRank = parseInt(Object.keys(rankCounts).find(k => rankCounts[k] === 2));
+    const kickers = ranks.filter(r => r !== pairRank).sort((a, b) => b - a).slice(0, 3);
+    return { rank: 2, name: "ワンペア", cards: [pairRank, pairRank], kickers };
+  }
+
+  // ハイカード
+  return { rank: 1, name: "ハイカード", cards: ranks.slice(0, 5), kickers: [] };
+}
 
 function setDebugCards() {
   if (debugMode) {
