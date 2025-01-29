@@ -25,19 +25,19 @@ let winnerText = ""; // 勝利者テキストを保持する変数
 // デバッグモード用の変数
 let debugMode = true; // デバッグモードを有効にする場合はtrue
 let debugPlayerCards = [
-  { suit: "heart", value: "2" },
-  { suit: "club", value: "2" }
+  { suit: "heart", value: "3" },
+  { suit: "club", value: "10" }
 ];
 let debugOpponentCards = [
-  { suit: "diamond", value: "4" },
-  { suit: "heart", value: "4" }
+  { suit: "diamond", value: "6" },
+  { suit: "spade", value: "10" }
 ];
 let debugCommunityCards = [
-  { suit: "heart", value: "10" },
-  { suit: "spade", value: "10" },
-  { suit: "heart", value: "J" },
-  { suit: "diamond", value: "J" },
-  { suit: "club", value: "5" }
+  { suit: "heart", value: "Q" },
+  { suit: "spade", value: "J" },
+  { suit: "spade", value: "5" },
+  { suit: "diamond", value: "4" },
+  { suit: "club", value: "8" }
 ];
 
 function preload() {
@@ -50,8 +50,10 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(800, 500);
+  createCanvas(900, 900 / 9 * 16); // 16:9の比率でキャンバスを作成
   textAlign(CENTER, CENTER);
+  // タッチデバイスかどうかを判定
+  isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   // デッキを作成
   for (let suit of suits) {
@@ -242,6 +244,9 @@ function drawWinnerText() {
     const y = opponentCardY + 90; // Player 2のカードの少し下
     text(winnerText, x, y);
   }
+  else {
+    text(winnerText, width / 2, height / 2);
+  }
 }
 // 勝者のテキストを設定する関数
 function setWinnerText(result) {
@@ -399,7 +404,7 @@ function drawCard(x, y, suit, value) {
 }
 
 
-function mousePressed() {
+function touchStarted() {
   console.log("GameState:", gameState); // デバッグ用ログ
 
   if (!sliding) {
@@ -734,10 +739,21 @@ function evaluateHand(cards) {
     return { rank: 4, name: "スリーカード", cards: Array(3).fill(threeRank), kickers };
   }
   if (counts[0] === 2 && counts[1] === 2) {
-    const pairs = Object.keys(rankCounts).filter(k => rankCounts[k] === 2).map(Number).sort((a, b) => b - a);
-    const kickers = ranks.filter(r => !pairs.includes(r)).sort((a, b) => b - a).slice(0, 1);
-    return { rank: 3, name: "ツーペア", cards: [...pairs.flatMap(p => [p, p])], kickers };
-  }
+    const pairs = Object.keys(rankCounts)
+      .filter(k => rankCounts[k] === 2) // ペアを取得
+      .map(Number) // 数値変換
+      .sort((a, b) => b - a); // 降順ソート（強いペアを優先）
+
+    const topTwoPairs = pairs.slice(0, 2); // 最も強い2つのペア
+
+    // キッカーの選択（ペア以外で最も強い1枚）
+    const kickers = ranks
+      .filter(r => !topTwoPairs.includes(r)) // ペアに含まれないカードを取得
+      .sort((a, b) => b - a) // 降順ソート
+      .slice(0, 1); // 上位1枚を取得（キッカー）
+
+    return { rank: 3, name: "ツーペア", cards: [...topTwoPairs.flatMap(p => [p, p]), ...kickers], kickers };
+}
   if (counts[0] === 2) {
     const pairRank = parseInt(Object.keys(rankCounts).find(k => rankCounts[k] === 2));
     const kickers = ranks.filter(r => r !== pairRank).sort((a, b) => b - a).slice(0, 3);
