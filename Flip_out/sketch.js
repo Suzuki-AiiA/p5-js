@@ -35,7 +35,7 @@ let debugOpponentCards = [
 let debugCommunityCards = [
   { suit: "heart", value: "Q" },
   { suit: "spade", value: "J" },
-  { suit: "spade", value: "5" },
+  { suit: "spade", value: "3" },
   { suit: "diamond", value: "4" },
   { suit: "club", value: "8" }
 ];
@@ -50,7 +50,7 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(900, 900 / 9 * 16); // 16:9の比率でキャンバスを作成
+  createCanvas(400, 400 / 9 * 16); // 16:9の比率でキャンバスを作成
   textAlign(CENTER, CENTER);
   // タッチデバイスかどうかを判定
   isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
