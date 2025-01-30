@@ -15,10 +15,16 @@ let gravity = 0.2;
 let groundY;
 let friction = 0.97; // 摩擦係数
 
-// 累積ドラッグ用変数
+// ドラッグ時間管理
 let accumulatedDragTime = 0; // ドラッグの合計時間
-let dragStartTime = 0;       // ドラッグ開始時
-let stopMovement = false; // 3秒経過後にtrueにして動きを止める
+let dragStartTime = 0;       // ドラッグ開始時刻
+// 3秒経過後に動きを止めるフラグ
+let stopMovement = false;
+
+// ズームアップ用の変数
+let appearStartTime = 0; // ズーム開始時刻
+let zoomDuration = 500;  // ズームにかける時間（ms）
+let specialCapsule = null; // ズームアップ表示するカプセル情報
 
 function preload() {
   backgroundImg = loadImage('images/background.png');
@@ -59,30 +65,52 @@ function setup() {
 function draw() {
   image(backgroundImg, width / 2, height / 2, width, height);
 
-  // ドラッグ中はカプセルをかき混ぜる
-  if (isDragging) {
+  // ドラッグ中は通常のカプセル動作
+  if (isDragging && !stopMovement) {
     mixCapsules();
   }
 
-  updateCapsules();
-  drawCapsules();
+    updateCapsules();
+    drawCapsules();
 
+  // レバー描画
   push();
   translate(centerX, centerY);
   rotate(leverAngle);
   image(lever, 0, 0, lever.width * scaleFactor, lever.height * scaleFactor);
   pop();
 
-  // 累計ドラッグ時間の算出
+  // 累計ドラッグ時間
   let currentDragTime = accumulatedDragTime;
   if (isDragging) {
     currentDragTime += (millis() - dragStartTime);
   }
 
-  // ドラッグ累計3秒以上
-  if (currentDragTime > 1000) {
-    console.log('ドラッグ合計時間が3秒を超えました。');
-    // handleStopMovement();
+  // 3秒を超えたら停止
+  if (currentDragTime > 3000 && !stopMovement) {
+    handleStopMovement();
+  }
+
+  // ========== ズームアップアニメ ==========
+  if (stopMovement && specialCapsule) {
+    // まだズーム開始時刻に達してない
+    if (millis() < appearStartTime) {
+      // 何もしない（待機）
+    } else {
+      // ズーム時間の経過率
+      let t = (millis() - appearStartTime) / zoomDuration;
+      t = constrain(t, 0, 1);
+      // スケールを0→1に補間
+      let s = lerp(0, 1, t);
+      let drawSize = capsuleSize * s;
+      image(
+        specialCapsule.img,
+        specialCapsule.x,
+        specialCapsule.y,
+        drawSize,
+        drawSize
+      );
+    }
   }
 }
 
@@ -163,7 +191,7 @@ function resolveCollisions() {
   }
 }
 
-// カプセルを停止し、指定のカプセルを表示する関数
+// 動きを止めて1秒後にカプセルをズームアップ表示する関数
 function handleStopMovement() {
   stopMovement = true;
 
@@ -175,25 +203,22 @@ function handleStopMovement() {
     capsule.ay = 0;
   }
 
-  // 新たに1つのカプセルを表示（例：中央に capsuleBlue）
-  // capsules = [];
-  // let specialCapsule = {
-  //   x: width / 2,
-  //   y: height / 2 + 80,
-  //   vx: 0,
-  //   vy: 0,
-  //   ax: 0,
-  //   ay: 0,
-  //   img: capsuleBlue
-  // };
-  image(capsuleRed, width / 2, height / 2 + 80, capsuleSize, capsuleSize);
-  // capsules.push(specialCapsule);
+  // 指定した秒後にズーム開始
+  appearStartTime = millis() + 0;
+  zoomDuration = 500;
+
+  // ズームアップで表示するカプセル情報
+  specialCapsule = {
+    x: width / 2,
+    y: height / 2 + 80,
+    img: capsuleBlue
+  };
 }
 
 function startDrag(x, y) {
   if (dist(x, y, centerX, centerY) < (lever.width * scaleFactor) / 2) {
     isDragging = true;
-    dragStartTime = millis(); // ドラッグ開始時刻
+    dragStartTime = millis();
 
     lastAngle = leverAngle;
     let initialAngle = atan2(y - centerY, x - centerX);
@@ -210,7 +235,6 @@ function dragMove(x, y) {
 
 function endDrag() {
   isDragging = false;
-  // ドラッグ時間を累積
   accumulatedDragTime += (millis() - dragStartTime);
 }
 
