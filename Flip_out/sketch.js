@@ -35,7 +35,7 @@ let debugOpponentCards = [
 let debugCommunityCards = [
   { suit: "heart", value: "Q" },
   { suit: "spade", value: "J" },
-  { suit: "spade", value: "3" },
+  { suit: "spade", value: "K" },
   { suit: "diamond", value: "4" },
   { suit: "club", value: "8" }
 ];
@@ -245,7 +245,7 @@ function drawWinnerText() {
     text(winnerText, x, y);
   }
   else {
-    text(winnerText, width / 2, height / 2);
+    text(winnerText, width / 2, height / 2 - 100);
   }
 }
 // 勝者のテキストを設定する関数
