@@ -14,9 +14,9 @@ let pushWidth = 250; // 幅
 let pushHeight = 60; // 高さ
 
 function preload() {
-  bgImage = loadImage("gatyamachine3.png"); // 背景画像を読み込む
-  pushImage = loadImage("push.png"); // pushボタン画像を読み込む
-  cupImage = loadImage("cupblue.png"); // cupblue画像を読み込む
+  bgImage = loadImage("images/gatyamachine3.png"); // 背景画像を読み込む
+  pushImage = loadImage("images/push.png"); // pushボタン画像を読み込む
+  cupImage = loadImage("images/cupblue.png"); // cupblue画像を読み込む
 }
 
 function setup() {
