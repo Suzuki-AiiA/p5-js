@@ -12,6 +12,14 @@ let animationProgress = 0; // アニメーションの進行度
 let animationPhase = 0; // アニメーションフェーズの管理
 let waitTime = 0; // アニメーションフェーズ間の待機時間
 let cupSplit = false; // カプセルを分割するかどうかのフラグ
+let startSwipeY = null; // スワイプ開始位置
+let isSwiping = false; // スワイプ状態フラグ
+let isTapping = false; // タップ状態フラグ
+let swipeThreshold = 100; // スワイプ開封の閾値
+
+let shakeOffsetX = 0; // シェイクのオフセットX
+let shakeX = 0; // シェイクのX座標
+let shearY = 0; // シェイクのY座標
 
 // 表示位置とサイズを調整できるパラメータ（グローバル変数）
 let pushWidth = 250; // 幅
@@ -44,7 +52,7 @@ function setup() {
 function draw() {
   image(bgImage, width / 2, height / 2, width, height); // 毎フレーム背景を描画
   image(pushImage, width / 2, pushY, pushWidth, pushHeight); // 毎フレーム pushボタンを描画
-  
+
   if (showCup) {
     if (animationPhase === 0) {
       cupSize = lerp(40, 30, animationProgress);
@@ -71,8 +79,8 @@ function draw() {
         animationPhase = 2;
       }
     } else if (animationPhase === 2) {
-  let startY = 250; // animationPhase === 1.5 のときの最終位置
-  let targetY = 400; // 拡大後の目標位置
+      let startY = 250; // animationPhase === 1.5 のときの最終位置
+      let targetY = 400; // 拡大後の目標位置
       let sizeProgress = lerp(90, 250, animationProgress);
       let centerOffset = (sizeProgress - 90) / 2; // 90からの増加分の半分を調整
       cupY = startY + (targetY - startY) * animationProgress - centerOffset;
@@ -80,6 +88,7 @@ function draw() {
       animationProgress += 0.05;
       if (animationProgress >= 1) {
         animationProgress = 1;
+        isSwiping = true; // スワイプを有効化
         cupSplit = true; // 拡大アニメーションが完了したらカプセルを分割
       }
     }
@@ -89,19 +98,26 @@ function draw() {
     let cupCenterY = cupY;
     
     if (cupSplit) {
-      image(cupBottomImage, cupX, cupCenterY, cupSize, cupSize);
-      image(cupTopImage, cupX, cupCenterY, cupSize, cupSize);
-    } else {
+      let shakeX = (animationPhase === 2 && isTapping) ? random(-2, 2) : 0;
+      let shakeY = (animationPhase === 2 && isTapping) ? random(-2, 2) : 0;
+  
+      image(cupBottomImage, cupX + shakeX, cupCenterY + shakeY, cupSize, cupSize);
+      image(cupTopImage, cupX + shakeX, cupCenterY + shakeY, cupSize, cupSize);
+    }else {
       image(cupImage, cupX, cupY, cupSize, cupSize);
     }
   }
+  // console.log("animationPhase: " + animationPhase);
+  // console.log("isSwiping " + isSwiping);
+  // console.log("isTapping " + isTapping);
 }
 
 function handlePress(x, y) {
-  if (y < height / 4) {
+  if (y < height / 8 && animationPhase < 2) { 
     setup();
-  } else if (x > width / 2 - pushWidth / 2 && x < width / 2 + pushWidth / 2 && y > pushY && y < pushY + pushHeight) {
-    showCup = true;
+  }
+  if (animationPhase < 2 && x > width / 2 - pushWidth / 2 && x < width / 2 + pushWidth / 2 && y > pushY && y < pushY + pushHeight) {
+    showCup = true; 
     animationProgress = 0;
     animationPhase = 0;
     waitTime = 0;
@@ -109,18 +125,60 @@ function handlePress(x, y) {
   }
 }
 
+
 function mousePressed() {
+  if(animationPhase === 2){
+    isTapping = true; // マウスを押したら振動を開始
+  }
   handlePress(mouseX, mouseY);
 }
 
-function touchStarted() {
-  if (touches.length > 0) {
-    handlePress(touches[0].x, touches[0].y);
+function mouseDragged() {
+}
+
+function mouseReleased() {
+  if(isTapping){
+    isTapping = false; // マウスを離したら振動を止める
+    isSwiping = false;  
+}
+}
+
+
+
+
+
+
+function touchStarted(event) {
+  if (animationPhase === 2) {
+    isTapping = true;
   }
+  if (touches.length > 0) {
+      let touchX = touches[0].x;
+      let touchY = touches[0].y;
+
+      // 🔥 `animationPhase >= 2` のときは `handlePress()` を呼ばない
+      if (animationPhase < 2) {
+        handlePress(touchX, touchY);
+      }
+
+      if (!cupSplit) return; 
+      startSwipeY = touchY;
+  }
+  if (event) event.preventDefault();
+}
+
+function touchMoved() {}
+
+function touchEnded(event) {
+  isTapping = false;
+  isSwiping = false;
+  if (event) event.preventDefault();
   return false;
 }
 
-function touchEnded(event) {
-  event.preventDefault();
-  return false;
+
+function openCapsule() {
+  console.log("カプセル開封！");
+  isSwiping = false;
+  // ★ ここでキャラクターを表示し、パーティクルエフェクトを発生させる処理を追加
 }
