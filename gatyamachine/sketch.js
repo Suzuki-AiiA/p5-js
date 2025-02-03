@@ -15,7 +15,10 @@ let cupSplit = false; // カプセルを分割するかどうかのフラグ
 let startSwipeY = null; // スワイプ開始位置
 let isSwiping = false; // スワイプ状態フラグ
 let isTapping = false; // タップ状態フラグ
-let swipeThreshold = 100; // スワイプ開封の閾値
+let openCapsuleUp = false; // カプセル開封フラグ
+let swipeThreshold = 300; // スワイプ開封の閾値
+let cupTopOffsetY = 0; // カプセル上部のY座標オフセット
+let mobileoffset = 0; // モバイル端末のオフセット
 
 let shakeOffsetX = 0; // シェイクのオフセットX
 let shakeX = 0; // シェイクのX座標
@@ -37,7 +40,7 @@ function preload() {
 }
 
 function setup() {
-    pushX = width / 2 - pushWidth / 2; // `width` が定義された後に計算
+  pushX = width / 2 - pushWidth / 2; // `width` が定義された後に計算
   createCanvas(400, (400 / 9) * 16); // 16:9の比率でキャンバスを作成
   imageMode(CENTER); // 画像の描画基準を中央に設定
   isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0; // タッチデバイスかどうかを判定
@@ -80,7 +83,7 @@ function draw() {
       }
     } else if (animationPhase === 2) {
       let startY = 250; // animationPhase === 1.5 のときの最終位置
-      let targetY = 400; // 拡大後の目標位置
+      let targetY = 500; // 拡大後の目標位置
       let sizeProgress = lerp(90, 250, animationProgress);
       let centerOffset = (sizeProgress - 90) / 2; // 90からの増加分の半分を調整
       cupY = startY + (targetY - startY) * animationProgress - centerOffset;
@@ -102,20 +105,21 @@ function draw() {
       let shakeY = (animationPhase === 2 && isTapping) ? random(-2, 2) : 0;
   
       image(cupBottomImage, cupX + shakeX, cupCenterY + shakeY, cupSize, cupSize);
-      image(cupTopImage, cupX + shakeX, cupCenterY + shakeY, cupSize, cupSize);
+      image(cupTopImage, cupX + shakeX, cupCenterY + shakeY + cupTopOffsetY, cupSize, cupSize);
     }else {
       image(cupImage, cupX, cupY, cupSize, cupSize);
     }
   }
-  // console.log("animationPhase: " + animationPhase);
-  // console.log("isSwiping " + isSwiping);
-  // console.log("isTapping " + isTapping);
+
 }
 
 function handlePress(x, y) {
   if (y < height / 8 && animationPhase < 2) { 
     setup();
   }
+  if(y < height / 16 && x < width / 16) {
+    setup();
+  } 
   if (animationPhase < 2 && x > width / 2 - pushWidth / 2 && x < width / 2 + pushWidth / 2 && y > pushY && y < pushY + pushHeight) {
     showCup = true; 
     animationProgress = 0;
@@ -127,58 +131,88 @@ function handlePress(x, y) {
 
 
 function mousePressed() {
-  if(animationPhase === 2){
-    isTapping = true; // マウスを押したら振動を開始
+  if(!isTouchDevice){
+    if(animationPhase === 2){
+      isTapping = true; // マウスを押したら振動を開始
+      startSwipeY = mouseY; // 🔥 ここで開始位置を記録
+    }
+    handlePress(mouseX, mouseY);  
   }
-  handlePress(mouseX, mouseY);
 }
-
-function mouseDragged() {
-}
-
-function mouseReleased() {
-  if(isTapping){
-    isTapping = false; // マウスを離したら振動を止める
-    isSwiping = false;  
-}
-}
-
-
-
-
-
 
 function touchStarted(event) {
+  if (!isTouchDevice) return; // PCでは処理しない
+
   if (animationPhase === 2) {
     isTapping = true;
+    startSwipeY = touches.length > 0 ? touches[0].y : startSwipeY; // タッチ開始位置を記録
   }
-  if (touches.length > 0) {
-      let touchX = touches[0].x;
+
+  if (animationPhase < 2 && touches.length > 0) {
+    handlePress(touches[0].x, touches[0].y); // カプセル未表示時のみ `handlePress()` を実行
+  }
+
+  if (event) event.preventDefault();
+}
+
+
+function mouseDragged() {
+  if (isSwiping) {
+      let swipeDistance = startSwipeY - mouseY;
+      console.log('Mouse swipe distance:', swipeDistance);
+
+      if (swipeDistance > swipeThreshold) {
+          openCapsule(); // カプセルを開く
+      } else {
+          cupTopOffsetY = 0; // 通常の移動範囲
+      }
+  }
+}
+
+function touchMoved() {
+  if (isSwiping && touches.length > 0) {
       let touchY = touches[0].y;
 
-      // 🔥 `animationPhase >= 2` のときは `handlePress()` を呼ばない
-      if (animationPhase < 2) {
-        handlePress(touchX, touchY);
-      }
+      let swipeDistance = startSwipeY - touchY;
+      console.log('Touch swipe distance:', swipeDistance);
 
-      if (!cupSplit) return; 
-      startSwipeY = touchY;
+      if (swipeDistance > swipeThreshold) {
+          openCapsule(); // カプセルを開く
+      } else {
+          cupTopOffsetY = 0; // スワイプに応じて少しずつ移動
+      }
   }
-  if (event) event.preventDefault();
 }
 
-function touchMoved() {}
+
+
+function mouseReleased() {
+  if(!isTouchDevice){
+    if(isTapping){
+      isTapping = false; // マウスを離したら振動を止める
+      isSwiping = false;  
+      startSwipeY = null; // 🔥 スワイプの基準点をリセット
+    }
+  }
+}
 
 function touchEnded(event) {
-  isTapping = false;
-  isSwiping = false;
-  if (event) event.preventDefault();
-  return false;
+  if(isTouchDevice){
+    if(isTapping){
+    isTapping = false;
+    isSwiping = false;
+    startSwipeY = null; // 🔥 スワイプの基準点をリセット
+    }
+    
+    if(event) event.preventDefault();
+    return false;  // デフォルト動作を防ぐ 
+  }
 }
-
 
 function openCapsule() {
   console.log("カプセル開封！");
   isSwiping = false;
-  // ★ ここでキャラクターを表示し、パーティクルエフェクトを発生させる処理を追加
+  isTapping = false;
+    cupTopOffsetY = -150; // カプセルの上部をさらに上に移動し、開いた状態にする
+  
 }
