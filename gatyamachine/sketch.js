@@ -45,8 +45,8 @@ class Particle {
     // 直線（光のビーム）の長さ（見た目の長さ）
     this.length = random(20, 50);
     // vx, vy をそれぞれ独立に乱数で設定（極座標方式は使わない）
-    this.vx = random(-2, 2);
-    this.vy = random(-2, 2);
+    this.vx = random(-6, 6);
+    this.vy = random(-6, 6);
     // 速度ベクトルから描画用の角度を算出
     this.angle = atan2(this.vy, this.vx);
     // 色は黄色系、アルファは固定または後で lifetime により変化させる
@@ -59,7 +59,7 @@ class Particle {
     this.x += this.vx;
     this.y += this.vy;
 
-    this.lifetime -= 3; // 2ずつ減らす（適宜調整）
+    this.lifetime -= 10; // 2ずつ減らす（適宜調整）
   }
 
   draw() {
