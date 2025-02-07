@@ -106,7 +106,7 @@ function setup() {
 
   // 画面サイズに応じたスワイプしきい値を設定（例：キャンバスの高さの10%をしきい値に）
   if (isTouchDevice) {
-    swipeThreshold = height * 0.1; // 例: 高さの10%
+    swipeThreshold = 200; // 例: 高さの10%
   } else {
     swipeThreshold = 300; // PC用は固定値
   }
@@ -262,6 +262,8 @@ function handlePress(x, y) {
 
 
 function mousePressed() {
+  if (isTouchDevice) return; // PCでは処理しない
+
   if(!isTouchDevice){
     if(animationPhase === 2){
       isTapping = true; // マウスを押したら振動を開始
@@ -272,8 +274,7 @@ function mousePressed() {
 }
 
 function touchStarted(event) {
-  if (!isTouchDevice) return; // PCでは処理しない
-
+  
   // 画面上部または左上隅をタップしたときは、animationPhase に関係なくリセットする
   let tx = touches[0].x;
   let ty = touches[0].y;
@@ -292,6 +293,8 @@ function touchStarted(event) {
 
 
 function mouseDragged() {
+  if (isTouchDevice) return; // PCでは処理しない
+
   if (isSwiping) {
       let swipeDistance = startSwipeY - mouseY;
       console.log('Mouse swipe distance:', swipeDistance);
@@ -318,6 +321,8 @@ function touchMoved() {
 }
 
 function mouseReleased() {
+  if (isTouchDevice) return; // PCでは処理しない
+
   if(!isTouchDevice){
     if(isTapping){
       isTapping = false; // マウスを離したら振動を止める
