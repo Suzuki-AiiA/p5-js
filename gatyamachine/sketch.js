@@ -306,8 +306,6 @@ function mouseDragged() {
 
 function touchMoved() {
   if (isSwiping && touches.length > 0) {
-      touchY = touches[0].y;
-
       let swipeDistance = startSwipeY - touches[0].y;
       console.log('Touch swipe distance:', swipeDistance);
 
